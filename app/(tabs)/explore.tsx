@@ -14,8 +14,12 @@ export default function TabTwoScreen() {
   const { userMemberships, setActive, createOrganization } = useOrganizationList({ userMemberships: true });
   const router = useRouter();
   const [modalVisible, setModalVisible] = useState(false);
+  const [inviteModalVisible, setInviteModalVisible] = useState(false);
   const [newOrgName, setNewOrgName] = useState('');
   const [isCreatingOrg, setIsCreatingOrg] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [isSendingInvite, setIsSendingInvite] = useState(false);
+  const [newlyCreatedOrg, setNewlyCreatedOrg] = useState<{ id: string, name: string } | null>(null);
 
   async function handleSignOut() {
     await signOut();
@@ -42,11 +46,46 @@ export default function TabTwoScreen() {
         await setActive({ organization: org.id });
         setNewOrgName('');
         setModalVisible(false);
+        
+        // Store the newly created org and show invite modal
+        setNewlyCreatedOrg({
+          id: org.id,
+          name: org.name
+        });
+        setInviteModalVisible(true);
       }
     } catch (error) {
       console.error('Error creating organization:', error);
     } finally {
       setIsCreatingOrg(false);
+    }
+  }
+
+  async function handleSendInvite() {
+    if (!inviteEmail.trim() || !organization) return;
+    
+    setIsSendingInvite(true);
+    try {
+      // Check if the email is valid
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inviteEmail)) {
+        alert('Please enter a valid email address');
+        return;
+      }
+      
+      // Send invitation using Clerk's API
+      await organization.inviteMember({
+        emailAddress: inviteEmail.trim(),
+        role: 'org:member'
+      });
+      
+      // Clear the input and show success message
+      setInviteEmail('');
+      alert(`Invitation sent to ${inviteEmail}`);
+    } catch (error) {
+      console.error('Error sending invitation:', error);
+      alert('Failed to send invitation. Please try again.');
+    } finally {
+      setIsSendingInvite(false);
     }
   }
 
@@ -155,6 +194,56 @@ export default function TabTwoScreen() {
               onPress={() => setModalVisible(false)}
             >
               <ThemedText style={styles.closeButtonText}>Close</ThemedText>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      
+      {/* Invitation Modal */}
+      <Modal
+        animationType="slide"
+        presentationStyle="pageSheet"
+        visible={inviteModalVisible}
+        onRequestClose={() => setInviteModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <ThemedText style={styles.modalTitle}>
+              Invite Members to {newlyCreatedOrg?.name || organization?.name}
+            </ThemedText>
+            
+            <ThemedText style={styles.inviteDescription}>
+              Send invitations to collaborate with others in your organization.
+            </ThemedText>
+            
+            <View style={styles.createOrgContainer}>
+              <TextInput
+                style={styles.orgNameInput}
+                placeholder="Email address"
+                placeholderTextColor="#757575"
+                value={inviteEmail}
+                onChangeText={setInviteEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+              <TouchableOpacity 
+                style={[styles.createOrgButton, !inviteEmail.trim() && styles.disabledButton]}
+                onPress={handleSendInvite}
+                disabled={!inviteEmail.trim() || isSendingInvite}
+              >
+                {isSendingInvite ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <ThemedText style={styles.createOrgButtonText}>Send</ThemedText>
+                )}
+              </TouchableOpacity>
+            </View>
+            
+            <TouchableOpacity 
+              style={styles.closeButton}
+              onPress={() => setInviteModalVisible(false)}
+            >
+              <ThemedText style={styles.closeButtonText}>Done</ThemedText>
             </TouchableOpacity>
           </View>
         </View>
@@ -316,4 +405,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
+  inviteDescription: {
+    fontSize: 14,
+    color: '#757575',
+    marginBottom: 20,
+    textAlign: 'center',
+  }
 });
