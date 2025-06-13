@@ -1,4 +1,4 @@
-import { Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Modal, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
@@ -11,9 +11,11 @@ import { useState } from 'react';
 export default function TabTwoScreen() {
   const { signOut } = useAuth();
   const { organization } = useOrganization();
-  const { userMemberships, setActive } = useOrganizationList({ userMemberships: true });
+  const { userMemberships, setActive, createOrganization } = useOrganizationList({ userMemberships: true });
   const router = useRouter();
   const [modalVisible, setModalVisible] = useState(false);
+  const [newOrgName, setNewOrgName] = useState('');
+  const [isCreatingOrg, setIsCreatingOrg] = useState(false);
 
   async function handleSignOut() {
     await signOut();
@@ -25,6 +27,27 @@ export default function TabTwoScreen() {
       await setActive({ organization: orgId });
     }
     setModalVisible(false);
+  }
+  
+  async function handleCreateOrganization() {
+    if (!createOrganization || !newOrgName.trim()) return;
+    
+    setIsCreatingOrg(true);
+    try {
+      // Create the organization
+      const org = await createOrganization({ name: newOrgName.trim() });
+      
+      // Set it as active if created successfully
+      if (org && setActive) {
+        await setActive({ organization: org.id });
+        setNewOrgName('');
+        setModalVisible(false);
+      }
+    } catch (error) {
+      console.error('Error creating organization:', error);
+    } finally {
+      setIsCreatingOrg(false);
+    }
   }
 
   return (
@@ -101,6 +124,31 @@ export default function TabTwoScreen() {
                 )}
               </TouchableOpacity>
             ))}
+            
+            <View style={styles.divider} />
+            
+            <ThemedText style={styles.sectionTitle}>Create new organization</ThemedText>
+            
+            <View style={styles.createOrgContainer}>
+              <TextInput
+                style={styles.orgNameInput}
+                placeholder="Organization name"
+                placeholderTextColor="#757575"
+                value={newOrgName}
+                onChangeText={setNewOrgName}
+              />
+              <TouchableOpacity 
+                style={[styles.createOrgButton, !newOrgName.trim() && styles.disabledButton]}
+                onPress={handleCreateOrganization}
+                disabled={!newOrgName.trim() || isCreatingOrg}
+              >
+                {isCreatingOrg ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <ThemedText style={styles.createOrgButtonText}>Create</ThemedText>
+                )}
+              </TouchableOpacity>
+            </View>
             
             <TouchableOpacity 
               style={styles.closeButton}
@@ -220,6 +268,50 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   closeButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#E0E0E0',
+    width: '100%',
+    marginVertical: 16,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#424242',
+    marginBottom: 12,
+    alignSelf: 'flex-start',
+  },
+  createOrgContainer: {
+    flexDirection: 'row',
+    width: '100%',
+    gap: 8,
+    marginBottom: 16,
+  },
+  orgNameInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 16,
+    color: '#424242',
+  },
+  createOrgButton: {
+    backgroundColor: '#424242',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+  },
+  disabledButton: {
+    backgroundColor: '#BDBDBD',
+  },
+  createOrgButtonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: '500',
