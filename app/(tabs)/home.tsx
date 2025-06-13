@@ -6,7 +6,7 @@ import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { createSupabaseClerkClient } from '@/utils/supabase';
-import { useSession, useUser } from '@clerk/clerk-expo';
+import { useOrganization, useSession, useUser } from '@clerk/clerk-expo';
 
 interface Task {
   id: string;
@@ -56,6 +56,9 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const { session } = useSession()
   const { user } = useUser() 
+  const { organization } = useOrganization()
+
+  const ownerId = organization?.id || user?.id
 
   const supabase = createSupabaseClerkClient(session?.getToken() || Promise.resolve(null));
 
@@ -65,7 +68,7 @@ export default function HomeScreen() {
       const { data, error } = await supabase
         .from('tasks')
         .select('*')
-        .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error fetching tasks:', error);
@@ -83,10 +86,13 @@ export default function HomeScreen() {
   async function addTask() {
     if (!newTaskTitle.trim()) return;
 
+    const token = await session?.getToken()
+    console.log(organization?.id, user?.id, token)
+
     try {
       const { data, error } = await supabase
         .from('tasks')
-        .insert([{ title: newTaskTitle.trim(), ownerid: user?.id }])
+        .insert([{ title: newTaskTitle.trim(), ownerid: organization?.id || user?.id }])
         .select();
 
       if (error) {
@@ -107,7 +113,7 @@ export default function HomeScreen() {
     try {
       const { error } = await supabase
         .from('tasks')
-        .update({ is_completed: isCompleted, ownerid: user?.id })
+        .update({ is_completed: isCompleted, ownerid: organization?.id || user?.id })
         .eq('id', id);
 
       if (error) {
@@ -129,7 +135,7 @@ export default function HomeScreen() {
         .from('tasks')
         .delete()
         .eq('id', id)
-        .eq('ownerid', user?.id);
+        .eq('ownerid', organization?.id || user?.id);
 
       if (error) {
         console.error('Error deleting task:', error);
@@ -155,7 +161,7 @@ export default function HomeScreen() {
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [ownerId]);
 
   return (
     <ParallaxScrollView

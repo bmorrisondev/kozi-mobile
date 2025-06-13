@@ -1,19 +1,30 @@
-import { StyleSheet, TouchableOpacity } from 'react-native';
+import { Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import { useAuth } from '@clerk/clerk-expo';
+import { useAuth, useOrganization, useOrganizationList } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 
 export default function TabTwoScreen() {
   const { signOut } = useAuth();
+  const { organization } = useOrganization();
+  const { userMemberships, setActive } = useOrganizationList({ userMemberships: true });
   const router = useRouter();
+  const [modalVisible, setModalVisible] = useState(false);
 
   async function handleSignOut() {
     await signOut();
     router.replace('/(auth)');
+  }
+  
+  async function handleSelectOrganization(orgId: string | null) {
+    if (setActive) {
+      await setActive({ organization: orgId });
+    }
+    setModalVisible(false);
   }
 
   return (
@@ -39,6 +50,67 @@ export default function TabTwoScreen() {
           <ThemedText style={styles.signOutButtonText}>Sign Out</ThemedText>
         </TouchableOpacity>
       </ThemedView>
+      
+      <ThemedView style={styles.organizationContainer}>
+        <ThemedText style={styles.subtitleText}>Selected organization</ThemedText>
+        <TouchableOpacity 
+          style={styles.organizationButton}
+          onPress={() => setModalVisible(true)}
+        >
+          <ThemedText style={styles.organizationText}>
+            {organization?.name || 'Personal Account'}
+          </ThemedText>
+          <IconSymbol size={16} name="chevron.down" color="#424242" />
+        </TouchableOpacity>
+      </ThemedView>
+      
+      <Modal
+        animationType="slide"
+        presentationStyle="pageSheet"
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <ThemedText style={styles.modalTitle}>Select Organization</ThemedText>
+            <TouchableOpacity 
+                key={'personal-acct'}
+                style={[styles.orgListItem, !organization && styles.activeOrgItem ]}
+                onPress={() => handleSelectOrganization(null)}
+              >
+                <ThemedText style={styles.orgListItemText}>
+                  Personal Account
+                </ThemedText>
+                {!organization && (
+                  <IconSymbol size={16} name="checkmark" color="#424242" />
+                )}
+              </TouchableOpacity>
+            {userMemberships?.data?.map((membership) => (
+              <TouchableOpacity 
+                key={membership.organization.id}
+                style={[styles.orgListItem, 
+                  membership.organization.id === organization?.id && styles.activeOrgItem
+                ]}
+                onPress={() => handleSelectOrganization(membership.organization.id)}
+              >
+                <ThemedText style={styles.orgListItemText}>
+                  {membership.organization.name}
+                </ThemedText>
+                {membership.organization.id === organization?.id && (
+                  <IconSymbol size={16} name="checkmark" color="#424242" />
+                )}
+              </TouchableOpacity>
+            ))}
+            
+            <TouchableOpacity 
+              style={styles.closeButton}
+              onPress={() => setModalVisible(false)}
+            >
+              <ThemedText style={styles.closeButtonText}>Close</ThemedText>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ParallaxScrollView>
   );
 }
@@ -70,5 +142,86 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '600',
+  },
+  organizationContainer: {
+    marginTop: 24,
+    alignItems: 'center',
+  },
+  subtitleText: {
+    fontSize: 14,
+    color: '#757575',
+    marginBottom: 8,
+  },
+  organizationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0F0F0',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 8,
+    minWidth: 200,
+    justifyContent: 'center',
+  },
+  organizationText: {
+    color: '#424242',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: '80%',
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    color: '#424242',
+  },
+  orgListItem: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  activeOrgItem: {
+    backgroundColor: '#F0F0F0',
+  },
+  orgListItemText: {
+    fontSize: 16,
+    color: '#424242',
+  },
+  closeButton: {
+    marginTop: 16,
+    backgroundColor: '#424242',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+  },
+  closeButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '500',
   },
 });
