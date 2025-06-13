@@ -1,11 +1,12 @@
 import { Image } from 'expo-image';
-import { useState, useEffect } from 'react';
-import { StyleSheet, TextInput, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
 
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { supabase } from '@/utils/supabase';
+import { createSupabaseClerkClient } from '@/utils/supabase';
+import { useSession, useUser } from '@clerk/clerk-expo';
 
 interface Task {
   id: string;
@@ -53,6 +54,10 @@ export default function HomeScreen() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [loading, setLoading] = useState(true);
+  const { session } = useSession()
+  const { user } = useUser() 
+
+  const supabase = createSupabaseClerkClient(session?.getToken() || Promise.resolve(null));
 
   async function fetchTasks() {
     try {
@@ -81,7 +86,7 @@ export default function HomeScreen() {
     try {
       const { data, error } = await supabase
         .from('tasks')
-        .insert([{ title: newTaskTitle.trim() }])
+        .insert([{ title: newTaskTitle.trim(), ownerid: user?.id }])
         .select();
 
       if (error) {
@@ -102,7 +107,7 @@ export default function HomeScreen() {
     try {
       const { error } = await supabase
         .from('tasks')
-        .update({ is_completed: isCompleted })
+        .update({ is_completed: isCompleted, ownerid: user?.id })
         .eq('id', id);
 
       if (error) {
@@ -123,7 +128,8 @@ export default function HomeScreen() {
       const { error } = await supabase
         .from('tasks')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('ownerid', user?.id);
 
       if (error) {
         console.error('Error deleting task:', error);
