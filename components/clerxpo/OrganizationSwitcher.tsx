@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import OrganizationSwitcherModal from "./OrganizationSwitcherModal";
 import { ThemedText } from "../ThemedText";
 import { ThemedView } from "../ThemedView";
 import { IconSymbol } from "../ui/IconSymbol";
@@ -121,102 +122,17 @@ function OrganizationSwitcher() {
         <IconSymbol size={16} name="chevron.down" color="#424242" />
       </TouchableOpacity>
 
-      <Modal
-        animationType="slide"
-        transparent={true}
-        presentationStyle="formSheet"
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setModalVisible(false)}
-        >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHandle} />
-              <ThemedText style={styles.modalTitle}>
-                Select Organization
-              </ThemedText>
-              <TouchableOpacity
-                key={"personal-acct"}
-                style={[
-                  styles.orgListItem,
-                  !organization && styles.activeOrgItem,
-                ]}
-                onPress={() => handleSelectOrganization(null)}
-              >
-                <ThemedText style={styles.orgListItemText}>
-                  Personal Account
-                </ThemedText>
-                {!organization && (
-                  <IconSymbol size={16} name="checkmark" color="#424242" />
-                )}
-              </TouchableOpacity>
-              {userMemberships?.data?.map((membership) => (
-                <TouchableOpacity
-                  key={membership.organization.id}
-                  style={[
-                    styles.orgListItem,
-                    membership.organization.id === organization?.id &&
-                      styles.activeOrgItem,
-                  ]}
-                  onPress={() =>
-                    handleSelectOrganization(membership.organization.id)
-                  }
-                >
-                  <ThemedText style={styles.orgListItemText}>
-                    {membership.organization.name}
-                  </ThemedText>
-                  {membership.organization.id === organization?.id && (
-                    <IconSymbol size={16} name="checkmark" color="#424242" />
-                  )}
-                </TouchableOpacity>
-              ))}
-
-              <View style={styles.divider} />
-
-              <ThemedText style={styles.sectionTitle}>
-                Create new organization
-              </ThemedText>
-
-              <View style={styles.createOrgContainer}>
-                <TextInput
-                  style={styles.orgNameInput}
-                  placeholder="Organization name"
-                  placeholderTextColor="#757575"
-                  value={newOrgName}
-                  onChangeText={setNewOrgName}
-                />
-                <TouchableOpacity
-                  style={[
-                    styles.createOrgButton,
-                    !newOrgName.trim() && styles.disabledButton,
-                  ]}
-                  onPress={handleCreateOrganization}
-                  disabled={!newOrgName.trim() || isCreatingOrg}
-                >
-                  {isCreatingOrg ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                  ) : (
-                    <ThemedText style={styles.createOrgButtonText}>
-                      Create
-                    </ThemedText>
-                  )}
-                </TouchableOpacity>
-              </View>
-
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setModalVisible(false)}
-              >
-                <ThemedText style={styles.closeButtonText}>Close</ThemedText>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </TouchableOpacity>
-      </Modal>
+      <OrganizationSwitcherModal
+        modalVisible={modalVisible}
+        setModalVisible={setModalVisible}
+        organization={organization}
+        userMemberships={userMemberships}
+        handleSelectOrganization={handleSelectOrganization}
+        handleCreateOrganization={handleCreateOrganization}
+        newOrgName={newOrgName}
+        setNewOrgName={setNewOrgName}
+        isCreatingOrg={isCreatingOrg}
+      />
 
       {/* Invitation Modal */}
       <Modal
@@ -426,18 +342,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#424242",
   },
-  closeButton: {
-    marginTop: 16,
-    backgroundColor: "#424242",
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-  },
-  closeButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "500",
-  },
   divider: {
     height: 1,
     backgroundColor: "#E0E0E0",
@@ -451,11 +355,18 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     alignSelf: "flex-start",
   },
+  inviteDescription: {
+    fontSize: 14,
+    color: "#757575",
+    marginBottom: 16,
+    textAlign: "center",
+    width: "100%",
+  },
   createOrgContainer: {
     flexDirection: "row",
     width: "100%",
     gap: 8,
-    marginBottom: 16,
+    marginBottom: 8,
   },
   orgNameInput: {
     flex: 1,
@@ -470,23 +381,30 @@ const styles = StyleSheet.create({
   createOrgButton: {
     backgroundColor: "#424242",
     borderRadius: 8,
-    paddingVertical: 8,
+    paddingVertical: 10,
     paddingHorizontal: 16,
     justifyContent: "center",
-  },
-  disabledButton: {
-    backgroundColor: "#BDBDBD",
+    alignItems: "center",
   },
   createOrgButtonText: {
     color: "white",
     fontSize: 16,
     fontWeight: "500",
   },
-  inviteDescription: {
-    fontSize: 14,
-    color: "#757575",
-    marginBottom: 20,
-    textAlign: "center",
+  disabledButton: {
+    backgroundColor: "#CCCCCC",
+  },
+  closeButton: {
+    marginTop: 16,
+    backgroundColor: "#424242",
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+  },
+  closeButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "500",
   },
 });
 

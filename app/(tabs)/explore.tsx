@@ -1,6 +1,6 @@
 import { StyleSheet, TouchableOpacity } from 'react-native';
 
-import OrganizationSwitcher from '@/components/clerkspo/OrganizationSwitcher';
+import OrganizationSwitcher from '@/components/clerxpo/OrganizationSwitcher';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
