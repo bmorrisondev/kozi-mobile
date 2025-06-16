@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
   },
   signOutButton: {
     backgroundColor: "#424242",
-    borderRadius: 12,
+    borderRadius: 6,
     padding: 16,
     alignItems: "center",
     justifyContent: "center",
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#F0F0F0",
-    borderRadius: 12,
+    borderRadius: 6,
     paddingVertical: 12,
     paddingHorizontal: 16,
     gap: 8,
@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
   orgImageContainer: {
     width: 24,
     height: 24,
-    borderRadius: 12,
+    borderRadius: 6,
     overflow: "hidden",
     marginRight: 4,
   },
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
   orgImagePlaceholder: {
     width: 24,
     height: 24,
-    borderRadius: 12,
+    borderRadius: 6,
     backgroundColor: "#424242",
     justifyContent: "center",
     alignItems: "center",

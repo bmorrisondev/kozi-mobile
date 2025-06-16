@@ -1,12 +1,11 @@
 import { useOrganizationList } from "@clerk/clerk-expo";
 import React from "react";
 import {
-    ActivityIndicator,
-    Modal,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Image,
+  Modal,
+  StyleSheet,
+  TouchableOpacity,
+  View
 } from "react-native";
 import { ThemedText } from "../ThemedText";
 import { IconSymbol } from "../ui/IconSymbol";
@@ -53,80 +52,143 @@ function OrganizationSwitcherModal({
             <ThemedText style={styles.modalTitle}>
               Select Organization
             </ThemedText>
-            <TouchableOpacity
-              key={"personal-acct"}
-              style={[
-                styles.orgListItem,
-                !organization && styles.activeOrgItem,
-              ]}
-              onPress={() => handleSelectOrganization(null)}
-            >
-              <ThemedText style={styles.orgListItemText}>
-                Personal Account
-              </ThemedText>
-              {!organization && (
-                <IconSymbol size={16} name="checkmark" color="#424242" />
-              )}
-            </TouchableOpacity>
-            {userMemberships?.data?.map((membership) => (
-              <TouchableOpacity
-                key={membership.organization.id}
-                style={[
-                  styles.orgListItem,
-                  membership.organization.id === organization?.id &&
-                    styles.activeOrgItem,
-                ]}
-                onPress={() =>
-                  handleSelectOrganization(membership.organization.id)
-                }
-              >
-                <ThemedText style={styles.orgListItemText}>
-                  {membership.organization.name}
-                </ThemedText>
-                {membership.organization.id === organization?.id && (
-                  <IconSymbol size={16} name="checkmark" color="#424242" />
-                )}
-              </TouchableOpacity>
-            ))}
-
-            <View style={styles.divider} />
-
+            {/* Active Organization at the top */}
+            {organization ? (
+              <View style={styles.activeOrgSection}>
+                <TouchableOpacity
+                  key={organization.id}
+                  style={[styles.orgListItem, styles.activeOrgItem]}
+                  disabled={true}
+                >
+                  <View style={styles.orgItemLeftContent}>
+                    {organization.imageUrl ? (
+                      <View style={styles.orgImageContainer}>
+                        <Image
+                          source={{ uri: organization.imageUrl }}
+                          style={styles.orgImage}
+                        />
+                      </View>
+                    ) : (
+                      <View style={styles.orgImagePlaceholder}>
+                        <ThemedText style={styles.orgImagePlaceholderText}>
+                          {organization.name?.[0] || "P"}
+                        </ThemedText>
+                      </View>
+                    )}
+                    <ThemedText style={styles.orgListItemText}>
+                      {organization.name || "Personal Account"}
+                    </ThemedText>
+                  </View>
+                  <View style={styles.orgItemRightContent}>
+                    <IconSymbol size={16} name="checkmark" color="#424242" />
+                    <TouchableOpacity style={styles.settingsButton}>
+                      <IconSymbol size={16} name="gear" color="#424242" />
+                    </TouchableOpacity>
+                  </View>
+                </TouchableOpacity>
+                <View style={styles.divider} />
+              </View>
+            ) : (
+              <View style={styles.activeOrgSection}>
+                <TouchableOpacity
+                  key={"personal-acct-active"}
+                  style={[styles.orgListItem, styles.activeOrgItem]}
+                  disabled={true}
+                >
+                  <View style={styles.orgItemLeftContent}>
+                    <View style={styles.orgImagePlaceholder}>
+                      <ThemedText style={styles.orgImagePlaceholderText}>P</ThemedText>
+                    </View>
+                    <ThemedText style={styles.orgListItemText}>
+                      Personal Account
+                    </ThemedText>
+                  </View>
+                  <View style={styles.orgItemRightContent}>
+                    <IconSymbol size={16} name="checkmark" color="#424242" />
+                    <TouchableOpacity style={styles.settingsButton}>
+                      <IconSymbol size={16} name="gear" color="#424242" />
+                    </TouchableOpacity>
+                  </View>
+                </TouchableOpacity>
+                <View style={styles.divider} />
+              </View>
+            )}
+            
             <ThemedText style={styles.sectionTitle}>
-              Create new organization
+              All Organizations
             </ThemedText>
-
-            <View style={styles.createOrgContainer}>
-              <TextInput
-                style={styles.orgNameInput}
-                placeholder="Organization name"
-                placeholderTextColor="#757575"
-                value={newOrgName}
-                onChangeText={setNewOrgName}
-              />
+            
+            {/* Personal Account option */}
+            {organization && (
               <TouchableOpacity
-                style={[
-                  styles.createOrgButton,
-                  !newOrgName.trim() && styles.disabledButton,
-                ]}
-                onPress={handleCreateOrganization}
-                disabled={!newOrgName.trim() || isCreatingOrg}
+                key={"personal-acct"}
+                style={[styles.orgListItem]}
+                onPress={() => handleSelectOrganization(null)}
               >
-                {isCreatingOrg ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <ThemedText style={styles.createOrgButtonText}>
-                    Create
+                <View style={styles.orgItemLeftContent}>
+                  <View style={styles.orgImagePlaceholder}>
+                    <ThemedText style={styles.orgImagePlaceholderText}>P</ThemedText>
+                  </View>
+                  <ThemedText style={styles.orgListItemText}>
+                    Personal Account
                   </ThemedText>
-                )}
+                </View>
+                <View style={styles.orgItemRightContent}>
+                </View>
               </TouchableOpacity>
-            </View>
+            )}
+            
+            {/* Organization list */}
+            {userMemberships?.data?.map((membership) => {
+              // Skip the active organization as it's already at the top
+              if (membership.organization.id === organization?.id) return null;
+              
+              return (
+                <TouchableOpacity
+                  key={membership.organization.id}
+                  style={[styles.orgListItem]}
+                  onPress={() =>
+                    handleSelectOrganization(membership.organization.id)
+                  }
+                >
+                  <View style={styles.orgItemLeftContent}>
+                    {membership.organization.imageUrl ? (
+                      <View style={styles.orgImageContainer}>
+                        <Image
+                          source={{ uri: membership.organization.imageUrl }}
+                          style={styles.orgImage}
+                        />
+                      </View>
+                    ) : (
+                      <View style={styles.orgImagePlaceholder}>
+                        <ThemedText style={styles.orgImagePlaceholderText}>
+                          {membership.organization.name[0]}
+                        </ThemedText>
+                      </View>
+                    )}
+                    <ThemedText style={styles.orgListItemText}>
+                      {membership.organization.name}
+                    </ThemedText>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+
 
             <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setModalVisible(false)}
-            >
-              <ThemedText style={styles.closeButtonText}>Close</ThemedText>
-            </TouchableOpacity>
+                key={"create-org"}
+                style={[styles.orgListItem]}
+                onPress={() => {}}
+              >
+                <View style={styles.orgItemLeftContent}>
+                  <View style={styles.orgImagePlaceholder}>
+                    <ThemedText style={styles.orgImagePlaceholderText}>+</ThemedText>
+                  </View>
+                  <ThemedText style={styles.orgListItemText}>
+                    Create Organization
+                  </ThemedText>
+                </View>
+              </TouchableOpacity>
           </View>
         </View>
       </TouchableOpacity>
@@ -135,6 +197,47 @@ function OrganizationSwitcherModal({
 }
 
 const styles = StyleSheet.create({
+  orgImageContainer: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    overflow: "hidden",
+    marginRight: 8,
+  },
+  orgImage: {
+    width: "100%",
+    height: "100%",
+  },
+  orgImagePlaceholder: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    backgroundColor: "#424242",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 8,
+  },
+  orgImagePlaceholderText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "bold",
+  },
+  orgItemLeftContent: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  orgItemRightContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  settingsButton: {
+    padding: 4,
+  },
+  activeOrgSection: {
+    width: "100%",
+    marginBottom: 8,
+  },
   modalOverlay: {
     flex: 1,
     justifyContent: "flex-end",
