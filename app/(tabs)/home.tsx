@@ -57,10 +57,9 @@ export default function HomeScreen() {
   const { session } = useSession()
   const { user } = useUser() 
   const { organization } = useOrganization()
+  const supabase = createSupabaseClerkClient(session?.getToken() || Promise.resolve(null));
 
   const ownerId = organization?.id || user?.id
-
-  const supabase = createSupabaseClerkClient(session?.getToken() || Promise.resolve(null));
 
   async function fetchTasks() {
     try {
@@ -68,7 +67,7 @@ export default function HomeScreen() {
       const { data, error } = await supabase
         .from('tasks')
         .select('*')
-          .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error fetching tasks:', error);

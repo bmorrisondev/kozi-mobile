@@ -1,93 +1,22 @@
-import { ActivityIndicator, Modal, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, TouchableOpacity } from 'react-native';
 
+import OrganizationSwitcher from '@/components/clerkspo/OrganizationSwitcher';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import { useAuth, useOrganization, useOrganizationList } from '@clerk/clerk-expo';
+import { useAuth } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
 
 export default function TabTwoScreen() {
   const { signOut } = useAuth();
-  const { organization } = useOrganization();
-  const { userMemberships, setActive, createOrganization } = useOrganizationList({ userMemberships: true });
   const router = useRouter();
-  const [modalVisible, setModalVisible] = useState(false);
-  const [inviteModalVisible, setInviteModalVisible] = useState(false);
-  const [newOrgName, setNewOrgName] = useState('');
-  const [isCreatingOrg, setIsCreatingOrg] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [isSendingInvite, setIsSendingInvite] = useState(false);
-  const [newlyCreatedOrg, setNewlyCreatedOrg] = useState<{ id: string, name: string } | null>(null);
 
   async function handleSignOut() {
     await signOut();
     router.replace('/(auth)');
   }
-  
-  async function handleSelectOrganization(orgId: string | null) {
-    if (setActive) {
-      await setActive({ organization: orgId });
-    }
-    setModalVisible(false);
-  }
-  
-  async function handleCreateOrganization() {
-    if (!createOrganization || !newOrgName.trim()) return;
-    
-    setIsCreatingOrg(true);
-    try {
-      // Create the organization
-      const org = await createOrganization({ name: newOrgName.trim() });
-      
-      // Set it as active if created successfully
-      if (org && setActive) {
-        await setActive({ organization: org.id });
-        setNewOrgName('');
-        setModalVisible(false);
-        
-        // Store the newly created org and show invite modal
-        setNewlyCreatedOrg({
-          id: org.id,
-          name: org.name
-        });
-        setInviteModalVisible(true);
-      }
-    } catch (error) {
-      console.error('Error creating organization:', error);
-    } finally {
-      setIsCreatingOrg(false);
-    }
-  }
 
-  async function handleSendInvite() {
-    if (!inviteEmail.trim() || !organization) return;
-    
-    setIsSendingInvite(true);
-    try {
-      // Check if the email is valid
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inviteEmail)) {
-        alert('Please enter a valid email address');
-        return;
-      }
-      
-      // Send invitation using Clerk's API
-      await organization.inviteMember({
-        emailAddress: inviteEmail.trim(),
-        role: 'org:member'
-      });
-      
-      // Clear the input and show success message
-      setInviteEmail('');
-      alert(`Invitation sent to ${inviteEmail}`);
-    } catch (error) {
-      console.error('Error sending invitation:', error);
-      alert('Failed to send invitation. Please try again.');
-    } finally {
-      setIsSendingInvite(false);
-    }
-  }
 
   return (
     <ParallaxScrollView
@@ -111,143 +40,10 @@ export default function TabTwoScreen() {
         >
           <ThemedText style={styles.signOutButtonText}>Sign Out</ThemedText>
         </TouchableOpacity>
-      </ThemedView>
-      
-      <ThemedView style={styles.organizationContainer}>
-        <ThemedText style={styles.subtitleText}>Selected organization</ThemedText>
-        <TouchableOpacity 
-          style={styles.organizationButton}
-          onPress={() => setModalVisible(true)}
-        >
-          <ThemedText style={styles.organizationText}>
-            {organization?.name || 'Personal Account'}
-          </ThemedText>
-          <IconSymbol size={16} name="chevron.down" color="#424242" />
-        </TouchableOpacity>
-      </ThemedView>
-      
-      <Modal
-        animationType="slide"
-        presentationStyle="pageSheet"
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <ThemedText style={styles.modalTitle}>Select Organization</ThemedText>
-            <TouchableOpacity 
-                key={'personal-acct'}
-                style={[styles.orgListItem, !organization && styles.activeOrgItem ]}
-                onPress={() => handleSelectOrganization(null)}
-              >
-                <ThemedText style={styles.orgListItemText}>
-                  Personal Account
-                </ThemedText>
-                {!organization && (
-                  <IconSymbol size={16} name="checkmark" color="#424242" />
-                )}
-              </TouchableOpacity>
-            {userMemberships?.data?.map((membership) => (
-              <TouchableOpacity 
-                key={membership.organization.id}
-                style={[styles.orgListItem, 
-                  membership.organization.id === organization?.id && styles.activeOrgItem
-                ]}
-                onPress={() => handleSelectOrganization(membership.organization.id)}
-              >
-                <ThemedText style={styles.orgListItemText}>
-                  {membership.organization.name}
-                </ThemedText>
-                {membership.organization.id === organization?.id && (
-                  <IconSymbol size={16} name="checkmark" color="#424242" />
-                )}
-              </TouchableOpacity>
-            ))}
-            
-            <View style={styles.divider} />
-            
-            <ThemedText style={styles.sectionTitle}>Create new organization</ThemedText>
-            
-            <View style={styles.createOrgContainer}>
-              <TextInput
-                style={styles.orgNameInput}
-                placeholder="Organization name"
-                placeholderTextColor="#757575"
-                value={newOrgName}
-                onChangeText={setNewOrgName}
-              />
-              <TouchableOpacity 
-                style={[styles.createOrgButton, !newOrgName.trim() && styles.disabledButton]}
-                onPress={handleCreateOrganization}
-                disabled={!newOrgName.trim() || isCreatingOrg}
-              >
-                {isCreatingOrg ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <ThemedText style={styles.createOrgButtonText}>Create</ThemedText>
-                )}
-              </TouchableOpacity>
-            </View>
-            
-            <TouchableOpacity 
-              style={styles.closeButton}
-              onPress={() => setModalVisible(false)}
-            >
-              <ThemedText style={styles.closeButtonText}>Close</ThemedText>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-      
-      {/* Invitation Modal */}
-      <Modal
-        animationType="slide"
-        presentationStyle="pageSheet"
-        visible={inviteModalVisible}
-        onRequestClose={() => setInviteModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <ThemedText style={styles.modalTitle}>
-              Invite Members to {newlyCreatedOrg?.name || organization?.name}
-            </ThemedText>
-            
-            <ThemedText style={styles.inviteDescription}>
-              Send invitations to collaborate with others in your organization.
-            </ThemedText>
-            
-            <View style={styles.createOrgContainer}>
-              <TextInput
-                style={styles.orgNameInput}
-                placeholder="Email address"
-                placeholderTextColor="#757575"
-                value={inviteEmail}
-                onChangeText={setInviteEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-              <TouchableOpacity 
-                style={[styles.createOrgButton, !inviteEmail.trim() && styles.disabledButton]}
-                onPress={handleSendInvite}
-                disabled={!inviteEmail.trim() || isSendingInvite}
-              >
-                {isSendingInvite ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <ThemedText style={styles.createOrgButtonText}>Send</ThemedText>
-                )}
-              </TouchableOpacity>
-            </View>
-            
-            <TouchableOpacity 
-              style={styles.closeButton}
-              onPress={() => setInviteModalVisible(false)}
-            >
-              <ThemedText style={styles.closeButtonText}>Done</ThemedText>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      </ThemedView>      
+
+      <OrganizationSwitcher />
+
     </ParallaxScrollView>
   );
 }
@@ -307,24 +103,37 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'flex-end',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
+  modalContainer: {
+    width: '100%',
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+  },
   modalContent: {
-    width: '80%',
+    width: '100%',
     backgroundColor: 'white',
-    borderRadius: 12,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     padding: 20,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: -2,
     },
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
+    paddingBottom: 30,
+  },
+  modalHandle: {
+    width: 40,
+    height: 5,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 3,
+    marginBottom: 20,
   },
   modalTitle: {
     fontSize: 20,
